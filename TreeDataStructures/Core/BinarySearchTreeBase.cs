@@ -15,8 +15,29 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
     
     public bool IsReadOnly => false;
 
-    public ICollection<TKey> Keys => throw new NotImplementedException();
-    public ICollection<TValue> Values => throw new NotImplementedException();
+    public ICollection<TKey> Keys
+    {
+        get {
+            var keysList = new List<TKey>();
+            var iterator = new TreeIterator(Root, TraversalStrategy.InOrder);
+            while (iterator.MoveNext()) {
+                keysList.Add(iterator.Current.Key);
+            } 
+            return keysList;
+        }
+    }
+    
+    public ICollection<TValue> Values
+    {
+        get {
+            var valuesList = new List<TValue>();
+            var iterator = new TreeIterator(Root, TraversalStrategy.InOrder);
+            while (iterator.MoveNext()) {
+                valuesList.Add(iterator.Current.Value);
+            }
+            return valuesList;
+        }
+    }
     
     
     public virtual void Add(TKey key, TValue value)
@@ -450,9 +471,40 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
     
     public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
     {
-        throw new NotImplementedException();
+        var iterator = new TreeIterator(Root, TraversalStrategy.InOrder);
+        return new KeyAndValue(iterator);
     }
     
+    private sealed class KeyAndValue : IEnumerator<KeyValuePair<TKey, TValue>>
+    {
+        private TreeIterator _iterator;
+
+        public KeyAndValue(TreeIterator iterator) {
+            _iterator = iterator;
+        }
+
+        public KeyValuePair<TKey, TValue> Current {
+            get {
+                TreeEntry<TKey, TValue> entry = _iterator.Current;
+                return new KeyValuePair<TKey, TValue>(entry.Key, entry.Value);
+            }
+        }
+
+        object IEnumerator.Current => Current;
+
+        public bool MoveNext() {
+            return _iterator.MoveNext();
+        }
+
+        public void Reset() {
+            _iterator.Reset();
+        }
+
+        public void Dispose() {
+            _iterator.Dispose();
+        }
+    }
+
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
 
