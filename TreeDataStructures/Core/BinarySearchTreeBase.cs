@@ -511,6 +511,25 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
     public void Add(KeyValuePair<TKey, TValue> item) => Add(item.Key, item.Value);
     public void Clear() { Root = null; Count = 0; }
     public bool Contains(KeyValuePair<TKey, TValue> item) => ContainsKey(item.Key);
-    public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex) => throw new NotImplementedException();
+    public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
+    {
+        if (array == null) {
+            throw new ArgumentNullException(nameof(array), "Отсутствует массив.");
+        }
+        else if (arrayIndex < 0) {
+            throw new ArgumentOutOfRangeException(nameof(arrayIndex), "Отрицательный индекс.");
+        }
+        else if (array.Length - arrayIndex < Count) {
+            throw new ArgumentException("Недостаточная длина массива.");
+        } else {
+            var iterator = new TreeIterator(Root, TraversalStrategy.InOrder);
+            int index = arrayIndex;
+            while (iterator.MoveNext()) {
+                TreeEntry<TKey, TValue> entry = iterator.Current;
+                array[index] = new KeyValuePair<TKey, TValue>(entry.Key, entry.Value);
+                index++;
+            }
+        }
+    }
     public bool Remove(KeyValuePair<TKey, TValue> item) => Remove(item.Key);
 }
