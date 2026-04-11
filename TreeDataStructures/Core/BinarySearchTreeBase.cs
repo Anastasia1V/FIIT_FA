@@ -204,19 +204,24 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
     }
     #endregion
     
-    public IEnumerable<TreeEntry<TKey, TValue>>  InOrder() => InOrderTraversal(Root);
-    
-    private IEnumerable<TreeEntry<TKey, TValue>>  InOrderTraversal(TNode? node)
-    {
-        if (node == null) {  yield break; }
-        throw new NotImplementedException();
+    public IEnumerable<TreeEntry<TKey, TValue>>  InOrder() {
+        return new TreeIterator(Root, TraversalStrategy.InOrder);
     }
-    
-    public IEnumerable<TreeEntry<TKey, TValue>>  PreOrder() => throw new NotImplementedException();
-    public IEnumerable<TreeEntry<TKey, TValue>>  PostOrder() => throw new NotImplementedException();
-    public IEnumerable<TreeEntry<TKey, TValue>>  InOrderReverse() => throw new NotImplementedException();
-    public IEnumerable<TreeEntry<TKey, TValue>>  PreOrderReverse() => throw new NotImplementedException();
-    public IEnumerable<TreeEntry<TKey, TValue>>  PostOrderReverse() => throw new NotImplementedException();
+    public IEnumerable<TreeEntry<TKey, TValue>>  PreOrder() {
+        return new TreeIterator(Root, TraversalStrategy.PreOrder);
+    }
+    public IEnumerable<TreeEntry<TKey, TValue>>  PostOrder() {
+        return new TreeIterator(Root, TraversalStrategy.PostOrder);
+    }
+    public IEnumerable<TreeEntry<TKey, TValue>>  InOrderReverse() {
+        return new TreeIterator(Root, TraversalStrategy.InOrderReverse);
+    }
+    public IEnumerable<TreeEntry<TKey, TValue>>  PreOrderReverse() {
+        return new TreeIterator(Root, TraversalStrategy.PreOrderReverse);
+    }
+    public IEnumerable<TreeEntry<TKey, TValue>>  PostOrderReverse() {
+        return new TreeIterator(Root, TraversalStrategy.PostOrderReverse);
+    }
     
     /// <summary>
     /// Внутренний класс-итератор. 
@@ -227,30 +232,213 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
         IEnumerator<TreeEntry<TKey, TValue>>
     {
         // probably add something here
+        private readonly TNode? _root;
+        private TNode? _currentNode;
+        private Stack<TNode> _stack;
+        private TNode? _lastVisited;
+        private TreeEntry<TKey, TValue> _currentEntry;
         private readonly TraversalStrategy _strategy; // or make it template parameter?
+        public TreeIterator(TNode? root, TraversalStrategy strategy) {
+            _root = root;
+            _currentNode = _root;
+            _stack = new Stack<TNode>();
+            _lastVisited = null;
+            _strategy = strategy;
+            if (_strategy == TraversalStrategy.PreOrder || _strategy == TraversalStrategy.PreOrderReverse) {
+                if (_root != null) {
+                    _stack.Push(_root);
+                }
+                _currentNode = null;
+            }
+        }
         
         public IEnumerator<TreeEntry<TKey, TValue>> GetEnumerator() => this;
         IEnumerator IEnumerable.GetEnumerator() => this;
         
-        public TreeEntry<TKey, TValue> Current => throw new NotImplementedException();
-        object IEnumerator.Current => Current;
+        public TreeEntry<TKey, TValue> Current {
+            get { return _currentEntry; }
+        }
+        object IEnumerator.Current {
+            get { return Current; }
+        }
         
         
         public bool MoveNext()
         {
-            if (_strategy == TraversalStrategy.InOrder)
-            {
-                throw new NotImplementedException();
+            if (_strategy == TraversalStrategy.InOrder) {
+                return MoveNextInOrder();
             }
-            throw new NotImplementedException("Strategy not implemented");
+            if (_strategy == TraversalStrategy.PreOrder) {
+                return MoveNextPreOrder();
+            }
+            if (_strategy == TraversalStrategy.PostOrder) {
+                return MoveNextPostOrder();
+            }
+            if (_strategy == TraversalStrategy.InOrderReverse) {
+                return MoveNextInOrderReverse();
+            }
+            if (_strategy == TraversalStrategy.PreOrderReverse) {
+                return MoveNextPreOrderReverse();
+            }
+            if (_strategy == TraversalStrategy.PostOrderReverse) {
+                return MoveNextPostOrderReverse();
+            }
+            return false;
         }
         
-        public void Reset()
+        private bool MoveNextInOrder()
         {
-            throw new NotImplementedException();
+            while (_currentNode != null || _stack.Count > 0) {
+                if (_currentNode != null) {
+                    _stack.Push(_currentNode);
+                    _currentNode = _currentNode.Left;
+                } else {
+                    TNode node = _stack.Pop();
+                    _currentEntry = new TreeEntry<TKey, TValue>(
+                        node.Key,
+                        node.Value,
+                        GetHeight(node)
+                    );
+                    _currentNode = node.Right;
+                    return true;
+                }
+            }
+            return false;
         }
 
-        
+        private bool MoveNextPreOrder()
+        {
+            if (_stack.Count == 0) {
+                return false;
+            }
+            TNode node = _stack.Pop();
+            if (node.Right != null) {
+                _stack.Push(node.Right);
+            }
+            if (node.Left != null) {
+                _stack.Push(node.Left);
+            }
+            _currentEntry = new TreeEntry<TKey, TValue>(
+                node.Key,
+                node.Value,
+                GetHeight(node)
+            );
+            return true;
+        }
+
+        private bool MoveNextPostOrder()
+        {
+            while (_currentNode != null || _stack.Count > 0) {
+                if (_currentNode != null) {
+                    _stack.Push(_currentNode);
+                    _currentNode = _currentNode.Left;
+                } else {
+                    TNode node = _stack.Peek();
+                    if (node.Right != null && _lastVisited != node.Right) {
+                        _currentNode = node.Right;
+                    } else {
+                        _stack.Pop();
+                        _currentEntry = new TreeEntry<TKey, TValue>(
+                            node.Key,
+                            node.Value,
+                            GetHeight(node)
+                        );
+                        _lastVisited = node;
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private bool MoveNextInOrderReverse()
+        {
+            while (_currentNode != null || _stack.Count > 0) {
+                if (_currentNode != null) {
+                    _stack.Push(_currentNode);
+                    _currentNode = _currentNode.Right;
+                } else {
+                    TNode node = _stack.Pop();
+                    _currentEntry = new TreeEntry<TKey, TValue>(
+                        node.Key,
+                        node.Value,
+                        GetHeight(node)
+                    );
+                    _currentNode = node.Left;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private bool MoveNextPreOrderReverse()
+        {
+            if (_stack.Count == 0) {
+                return false;
+            }
+            TNode node = _stack.Pop();
+            if (node.Left != null) {
+                _stack.Push(node.Left);
+            }
+            if (node.Right != null) {
+                _stack.Push(node.Right);
+            }
+            _currentEntry = new TreeEntry<TKey, TValue>(
+                node.Key,
+                node.Value,
+                GetHeight(node)
+            );
+            return true;
+        }
+
+        private bool MoveNextPostOrderReverse()
+        {
+            while (_currentNode != null || _stack.Count > 0) {
+                if (_currentNode != null) {
+                    _stack.Push(_currentNode);
+                    _currentNode = _currentNode.Right;
+                } else {
+                    TNode node = _stack.Peek();
+                    if (node.Left != null && _lastVisited != node.Left) {
+                        _currentNode = node.Left;
+                    } else {
+                        _stack.Pop();
+                        _currentEntry = new TreeEntry<TKey, TValue>(
+                            node.Key,
+                            node.Value,
+                            GetHeight(node)
+                        );
+                        _lastVisited = node;
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private int GetHeight(TNode? node)
+        {
+            if (node == null) {
+                return 0;
+            }
+            int left = GetHeight(node.Left);
+            int right = GetHeight(node.Right);
+            return Math.Max(left, right) + 1;
+        }
+
+        public void Reset()
+        {
+            _stack.Clear();
+            _currentNode = _root;
+            if (_strategy == TraversalStrategy.PreOrder || _strategy == TraversalStrategy.PreOrderReverse) {
+                if (_root != null) {
+                    _stack.Push(_root);
+                }
+                _currentNode = null;
+            }
+            _lastVisited = null;
+        }
+
         public void Dispose()
         {
             // TODO release managed resources here
