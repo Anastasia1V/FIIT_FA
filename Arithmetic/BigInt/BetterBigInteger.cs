@@ -275,71 +275,20 @@ public sealed class BetterBigInteger : IBigInteger
 
     public static BetterBigInteger operator &(BetterBigInteger a, BetterBigInteger b)
     {
-        int length = Math.Max(a.GetDigits().Length, b.GetDigits().Length);
-        uint[] bitsA = ToTwosComplement(a, length + 1);
-        uint[] bitsB = ToTwosComplement(b, length + 1);
-        int maxLength = Math.Max(bitsA.Length, bitsB.Length);
-        uint[] result = new uint[maxLength];
-        for (int i = 0; i < maxLength; i++) {
-            uint digitA;
-            if (i < bitsA.Length) {
-                digitA = bitsA[i];
-            } else {
-                if (a.IsNegative) {
-                    digitA = uint.MaxValue;
-                } else {
-                    digitA = 0;
-                }
-            }
-            uint digitB;
-            if (i < bitsB.Length) {
-                digitB = bitsB[i];
-            } else {
-                if (b.IsNegative) {
-                    digitB = uint.MaxValue;
-                } else {
-                    digitB = 0;
-                }
-            }
-            result[i] = digitA & digitB;
-        }
-        return FromTwosComplement(result);
+        return Operations(a, b, (x, y) => x & y);
     }
 
     public static BetterBigInteger operator |(BetterBigInteger a, BetterBigInteger b)
     {
-        int length = Math.Max(a.GetDigits().Length, b.GetDigits().Length);
-        uint[] bitsA = ToTwosComplement(a, length + 1);
-        uint[] bitsB = ToTwosComplement(b, length + 1);
-        int maxLength = Math.Max(bitsA.Length, bitsB.Length);
-        uint[] result = new uint[maxLength];
-        for (int i = 0; i < maxLength; i++) {
-            uint digitA;
-            if (i < bitsA.Length) {
-                digitA = bitsA[i];
-            } else {
-                if (a.IsNegative) {
-                    digitA = uint.MaxValue;
-                } else {
-                    digitA = 0;
-                }
-            }
-            uint digitB;
-            if (i < bitsB.Length) {
-                digitB = bitsB[i];
-            } else {
-                if (b.IsNegative) {
-                    digitB = uint.MaxValue;
-                } else {
-                    digitB = 0;
-                }
-            }
-            result[i] = digitA | digitB;
-        }
-        return FromTwosComplement(result);
+        return Operations(a, b, (x, y) => x | y);
     }
 
     public static BetterBigInteger operator ^(BetterBigInteger a, BetterBigInteger b)
+    {
+        return Operations(a, b, (x, y) => x ^ y);
+    }
+
+    private static BetterBigInteger Operations(BetterBigInteger a, BetterBigInteger b, Func<uint, uint, uint> operation)
     {
         int length = Math.Max(a.GetDigits().Length, b.GetDigits().Length);
         uint[] bitsA = ToTwosComplement(a, length + 1);
@@ -367,7 +316,7 @@ public sealed class BetterBigInteger : IBigInteger
                     digitB = 0;
                 }
             }
-            result[i] = digitA ^ digitB;
+            result[i] = operation(digitA, digitB);
         }
         return FromTwosComplement(result);
     }
